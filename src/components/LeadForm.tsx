@@ -1,0 +1,117 @@
+import { useState } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { addLead } from "@/lib/leads-store";
+import { Lead } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
+import { Send } from "lucide-react";
+
+const SECTORS = [
+  "Technology", "Healthcare", "Financial Services", "Energy", "Manufacturing",
+  "Real Estate", "Retail", "Telecommunications", "Automotive", "Agriculture",
+  "Construction", "Media & Entertainment", "Other",
+];
+
+const SOURCE_TYPES = [
+  "Referral", "Cold Outreach", "Event", "Media", "FinStat", "LinkedIn", "Other",
+];
+
+interface LeadFormProps {
+  onSubmitted: () => void;
+}
+
+export default function LeadForm({ onSubmitted }: LeadFormProps) {
+  const { toast } = useToast();
+  const today = new Date().toISOString().split("T")[0];
+
+  const [form, setForm] = useState({
+    companyName: "",
+    ico: "",
+    sector: "",
+    sourceType: "",
+    date: today,
+    website: "",
+    finstatLink: "",
+    reasoning: "",
+    addedBy: "",
+  });
+
+  const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.companyName || !form.ico || !form.sector || !form.addedBy) {
+      toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
+      return;
+    }
+
+    const lead: Lead = {
+      id: crypto.randomUUID(),
+      ...form,
+      status: "1.1 Target Identified",
+      contact: "",
+      manager: "",
+      managerFeedback: "",
+    };
+
+    addLead(lead);
+    toast({ title: "Lead submitted", description: `${form.companyName} added to pipeline.` });
+    setForm({ companyName: "", ico: "", sector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
+    onSubmitted();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <Label>Company Name *</Label>
+          <Input value={form.companyName} onChange={(e) => set("companyName", e.target.value)} placeholder="e.g. Slovenská sporiteľňa" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>IČO *</Label>
+          <Input value={form.ico} onChange={(e) => set("ico", e.target.value)} placeholder="e.g. 00151653" />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Sector *</Label>
+          <Select value={form.sector} onValueChange={(v) => set("sector", v)}>
+            <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
+            <SelectContent>{SECTORS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Source Type</Label>
+          <Select value={form.sourceType} onValueChange={(v) => set("sourceType", v)}>
+            <SelectTrigger><SelectValue placeholder="Select source" /></SelectTrigger>
+            <SelectContent>{SOURCE_TYPES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+        <div className="space-y-1.5">
+          <Label>Date</Label>
+          <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Added By (Initials) *</Label>
+          <Input value={form.addedBy} onChange={(e) => set("addedBy", e.target.value.toUpperCase())} placeholder="e.g. JK" maxLength={5} />
+        </div>
+        <div className="space-y-1.5">
+          <Label>Website</Label>
+          <Input value={form.website} onChange={(e) => set("website", e.target.value)} placeholder="https://..." />
+        </div>
+        <div className="space-y-1.5">
+          <Label>FinStat Link</Label>
+          <Input value={form.finstatLink} onChange={(e) => set("finstatLink", e.target.value)} placeholder="https://finstat.sk/..." />
+        </div>
+      </div>
+      <div className="space-y-1.5">
+        <Label>Reasoning</Label>
+        <Textarea value={form.reasoning} onChange={(e) => set("reasoning", e.target.value)} placeholder="Why is this company a good lead?" rows={3} />
+      </div>
+      <Button type="submit" className="w-full sm:w-auto gap-2">
+        <Send className="h-4 w-4" /> Submit Lead
+      </Button>
+    </form>
+  );
+}
