@@ -10,14 +10,14 @@ import { useToast } from "@/hooks/use-toast";
 import { Send } from "lucide-react";
 
 const SECTORS = [
-  "Technology", "Healthcare", "Financial Services", "Energy", "Manufacturing",
-  "Real Estate", "Retail", "Telecommunications", "Automotive", "Agriculture",
-  "Construction", "Media & Entertainment", "Other",
+  "Agriculture", "Automotive", "Biotechnology", "Chemicals and materials",
+  "Computer & software", "Consumer FMCG", "Consumers retail", "Construction",
+  "Defense", "Energy", "Financial services", "Industrials", "Manufacturing",
+  "Medical & pharma", "Mining", "Real estate", "Security", "Services",
+  "Telco", "Transportation", "Waste management", "Wholesale distribution", "Other",
 ];
 
-const SOURCE_TYPES = [
-  "Referral", "Cold Outreach", "Event", "Media", "FinStat", "LinkedIn", "Other",
-];
+const SOURCE_TYPES = ["Research", "News", "Intercompany", "Personal contact"];
 
 interface LeadFormProps {
   onSubmitted: () => void;
@@ -31,6 +31,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     companyName: "",
     ico: "",
     sector: "",
+    customSector: "",
     sourceType: "",
     date: today,
     website: "",
@@ -43,23 +44,38 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.companyName || !form.ico || !form.sector || !form.addedBy) {
+    const finalSector = form.sector === "Other" ? form.customSector : form.sector;
+    if (!form.companyName || !form.ico || !finalSector || !form.addedBy) {
       toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
       return;
     }
 
     const lead: Lead = {
       id: crypto.randomUUID(),
-      ...form,
+      companyName: form.companyName,
+      ico: form.ico,
+      sector: finalSector,
+      sourceType: form.sourceType,
+      date: form.date,
+      website: form.website,
+      finstatLink: form.finstatLink,
+      reasoning: form.reasoning,
+      addedBy: form.addedBy.toUpperCase(),
       status: "1.1 Target Identified",
       contact: "",
       manager: "",
       managerFeedback: "",
+      managerAcronym: "",
+      managerDecision: "",
+      approachType: "",
+      approachDate: "",
+      approachResponse: "",
+      approachFeedback: "",
     };
 
     addLead(lead);
     toast({ title: "Lead submitted", description: `${form.companyName} added to pipeline.` });
-    setForm({ companyName: "", ico: "", sector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
+    setForm({ companyName: "", ico: "", sector: "", customSector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
     onSubmitted();
   };
 
@@ -67,20 +83,26 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-5">
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
-          <Label>Company Name *</Label>
+          <Label>Company Name</Label>
           <Input value={form.companyName} onChange={(e) => set("companyName", e.target.value)} placeholder="e.g. Slovenská sporiteľňa" />
         </div>
         <div className="space-y-1.5">
-          <Label>IČO *</Label>
+          <Label>IČO</Label>
           <Input value={form.ico} onChange={(e) => set("ico", e.target.value)} placeholder="e.g. 00151653" />
         </div>
         <div className="space-y-1.5">
-          <Label>Sector *</Label>
+          <Label>Sector</Label>
           <Select value={form.sector} onValueChange={(v) => set("sector", v)}>
             <SelectTrigger><SelectValue placeholder="Select sector" /></SelectTrigger>
             <SelectContent>{SECTORS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        {form.sector === "Other" && (
+          <div className="space-y-1.5">
+            <Label>Custom Sector</Label>
+            <Input value={form.customSector} onChange={(e) => set("customSector", e.target.value)} placeholder="Enter sector name" />
+          </div>
+        )}
         <div className="space-y-1.5">
           <Label>Source Type</Label>
           <Select value={form.sourceType} onValueChange={(v) => set("sourceType", v)}>
@@ -93,7 +115,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
           <Input type="date" value={form.date} onChange={(e) => set("date", e.target.value)} />
         </div>
         <div className="space-y-1.5">
-          <Label>Added By (Initials) *</Label>
+          <Label>Originator (Initials)</Label>
           <Input value={form.addedBy} onChange={(e) => set("addedBy", e.target.value.toUpperCase())} placeholder="e.g. JK" maxLength={5} />
         </div>
         <div className="space-y-1.5">
@@ -106,7 +128,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
         </div>
       </div>
       <div className="space-y-1.5">
-        <Label>Reasoning</Label>
+        <Label>Case Reasoning</Label>
         <Textarea value={form.reasoning} onChange={(e) => set("reasoning", e.target.value)} placeholder="Why is this company a good lead?" rows={3} />
       </div>
       <Button type="submit" className="w-full sm:w-auto gap-2">
