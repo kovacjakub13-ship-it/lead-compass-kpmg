@@ -27,7 +27,6 @@ export default function Index() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
       <header className="border-b bg-primary text-primary-foreground">
         <div className="container flex items-center justify-between h-14 px-4">
           <div className="flex items-center gap-3">
@@ -41,13 +40,13 @@ export default function Index() {
       <main className="container px-4 py-6 space-y-6">
         <Tabs defaultValue="pipeline">
           <TabsList className="mb-4">
-            <TabsTrigger value="new" className="gap-1.5"><PlusCircle className="h-4 w-4" /> New Lead</TabsTrigger>
+            <TabsTrigger value="new" className="gap-1.5"><PlusCircle className="h-4 w-4" /> Lead Input</TabsTrigger>
             <TabsTrigger value="pipeline" className="gap-1.5"><LayoutDashboard className="h-4 w-4" /> Pipeline</TabsTrigger>
           </TabsList>
 
           <TabsContent value="new">
             <div className="rounded-lg border bg-card p-6">
-              <h2 className="text-lg font-semibold mb-4">Add New Lead</h2>
+              <h2 className="text-lg font-semibold mb-4">Lead Input</h2>
               <LeadForm onSubmitted={refresh} />
             </div>
           </TabsContent>
@@ -68,7 +67,7 @@ export default function Index() {
               </div>
               {PIPELINE_TABS.map((t) => (
                 <TabsContent key={t.label} value={t.label}>
-                  <LeadTable leads={filter(t.statuses)} onUpdate={refresh} />
+                  <LeadTable leads={filter(t.statuses)} activeTab={t.label} onUpdate={refresh} />
                 </TabsContent>
               ))}
             </Tabs>

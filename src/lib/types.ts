@@ -8,6 +8,10 @@ export type LeadStatus =
   | "Proposal"
   | "Client Mandate";
 
+export type ManagerDecision = "Yes" | "No" | "On hold" | "";
+export type ApproachType = "Email" | "Phone" | "Linkedin" | "Personal" | "";
+export type ApproachResponse = "Yes" | "No response" | "No" | "Follow-up later" | "";
+
 export interface Lead {
   id: string;
   companyName: string;
@@ -23,4 +27,10 @@ export interface Lead {
   contact: string;
   manager: string;
   managerFeedback: string;
+  managerAcronym: string;
+  managerDecision: ManagerDecision;
+  approachType: ApproachType;
+  approachDate: string;
+  approachResponse: ApproachResponse;
+  approachFeedback: string;
 }
