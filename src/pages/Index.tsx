@@ -10,12 +10,11 @@ const PIPELINE_TABS: { label: string; statuses: LeadStatus[]; icon: React.ReactN
   { label: "All", statuses: [], icon: <LayoutDashboard className="h-4 w-4" /> },
   { label: "Target Identified", statuses: ["1.1 Target Identified"], icon: <Target className="h-4 w-4" /> },
   { label: "Approach", statuses: ["1.2 Approach"], icon: <Phone className="h-4 w-4" /> },
-  { label: "Yes", statuses: ["Yes"], icon: <CheckCircle className="h-4 w-4" /> },
-  { label: "No Response", statuses: ["No Response"], icon: <Clock className="h-4 w-4" /> },
-  { label: "Declined", statuses: ["Declined"], icon: <XCircle className="h-4 w-4" /> },
-  { label: "Follow Up", statuses: ["Follow Up Later"], icon: <Clock className="h-4 w-4" /> },
-  { label: "Proposal", statuses: ["Proposal"], icon: <FileText className="h-4 w-4" /> },
-  { label: "Client Mandate", statuses: ["Client Mandate"], icon: <Award className="h-4 w-4" /> },
+  { label: "Yes - Proposal", statuses: ["3.1 Yes - Proposal"], icon: <CheckCircle className="h-4 w-4" /> },
+  { label: "No Response", statuses: ["2.2 No Response"], icon: <Clock className="h-4 w-4" /> },
+  { label: "Declined", statuses: ["2.3 Declined"], icon: <XCircle className="h-4 w-4" /> },
+  { label: "Follow Up", statuses: ["2.4 Follow Up Later"], icon: <Clock className="h-4 w-4" /> },
+  { label: "Client Mandate", statuses: ["4.1 Client Mandate"], icon: <Award className="h-4 w-4" /> },
 ];
 
 export default function Index() {

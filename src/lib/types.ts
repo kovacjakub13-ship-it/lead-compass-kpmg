@@ -1,12 +1,12 @@
 export type LeadStatus =
   | "1.1 Target Identified"
   | "1.2 Approach"
-  | "Yes"
-  | "No Response"
-  | "Declined"
-  | "Follow Up Later"
-  | "Proposal"
-  | "Client Mandate";
+  | "2.1 Yes"
+  | "2.2 No Response"
+  | "2.3 Declined"
+  | "2.4 Follow Up Later"
+  | "3.1 Yes - Proposal"
+  | "4.1 Client Mandate";
 
 export type ManagerDecision = "Yes" | "No" | "On hold" | "";
 export type ApproachType = "Email" | "Phone" | "Linkedin" | "Personal" | "";

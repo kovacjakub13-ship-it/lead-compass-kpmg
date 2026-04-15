@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { addLead } from "@/lib/leads-store";
 import { Lead } from "@/lib/types";
-import { useToast } from "@/hooks/use-toast";
-import { Send } from "lucide-react";
+import { toast } from "sonner";
+import { Send, CheckCircle2 } from "lucide-react";
 
 const SECTORS = [
   "Agriculture", "Automotive", "Biotechnology", "Chemicals and materials",
@@ -24,7 +24,6 @@ interface LeadFormProps {
 }
 
 export default function LeadForm({ onSubmitted }: LeadFormProps) {
-  const { toast } = useToast();
   const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
@@ -46,7 +45,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     e.preventDefault();
     const finalSector = form.sector === "Other" ? form.customSector : form.sector;
     if (!form.companyName || !form.ico || !finalSector || !form.addedBy) {
-      toast({ title: "Missing fields", description: "Please fill in all required fields.", variant: "destructive" });
+      toast.error("Please fill in all required fields.");
       return;
     }
 
@@ -74,7 +73,10 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     };
 
     addLead(lead);
-    toast({ title: "Lead submitted", description: `${form.companyName} added to pipeline.` });
+    toast.success("Lead submitted successfully!", {
+      description: `${form.companyName} has been added to the pipeline.`,
+      icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
+    });
     setForm({ companyName: "", ico: "", sector: "", customSector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
     onSubmitted();
   };
