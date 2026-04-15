@@ -1,16 +1,19 @@
 import { useState, useMemo } from "react";
 import { Lead, LeadStatus, ManagerDecision, ApproachType, ApproachResponse } from "@/lib/types";
-import { updateLead } from "@/lib/leads-store";
+import { updateLead, deleteLead, duplicateLead, getLeads } from "@/lib/leads-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Filter, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Download } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Props {
   leads: Lead[];
@@ -18,7 +21,19 @@ interface Props {
   onUpdate: () => void;
 }
 
-// Filterable column header
+function exportLeadsToExcel(leads: Lead[]) {
+  const headers = ["Company Name", "IČO", "Sector", "Source Type", "Date", "Website", "FinStat", "Originator", "Reasoning", "Status", "Contact", "Manager Feedback", "Manager", "Approach Type", "Approach Date", "Response", "Client Feedback"];
+  const rows = leads.map(l => [l.companyName, l.ico, l.sector, l.sourceType, l.date, l.website, l.finstatLink, l.addedBy, l.reasoning, l.status, l.contact, l.managerFeedback, l.managerAcronym, l.approachType, l.approachDate, l.approachResponse, l.approachFeedback]);
+  const csv = [headers, ...rows].map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join("\t")).join("\n");
+  const blob = new Blob([csv], { type: "application/vnd.ms-excel" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "leads_export.xls";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function FilterHeader({ label, values, filter, setFilter }: {
   label: string; values: string[]; filter: string; setFilter: (v: string) => void;
 }) {
@@ -56,15 +71,26 @@ function FilterHeader({ label, values, filter, setFilter }: {
   );
 }
 
-// Inline editable cell
-function InlineInput({ value, onChange, placeholder }: { value: string; onChange: (v: string) => void; placeholder: string }) {
+function RowActions({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   return (
-    <Input
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      className="h-7 text-xs min-w-[100px]"
-    />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start">
+        <DropdownMenuItem onClick={() => { duplicateLead(lead.id); toast.success("Lead duplicated"); onUpdate(); }}>
+          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={() => exportLeadsToExcel([lead])}>
+          <Download className="h-3.5 w-3.5 mr-2" /> Export
+        </DropdownMenuItem>
+        <DropdownMenuItem className="text-destructive" onClick={() => { deleteLead(lead.id); toast.success("Lead deleted"); onUpdate(); }}>
+          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
@@ -93,6 +119,11 @@ function DatePickerCell({ value, onChange }: { value: string; onChange: (v: stri
   );
 }
 
+function daysSince(dateStr: string): number {
+  if (!dateStr) return 0;
+  return differenceInDays(new Date(), new Date(dateStr));
+}
+
 function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
   leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
 }) {
@@ -109,29 +140,30 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10"></TableHead>
           <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
           <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
           <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
           <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
-          <TableHead>FinStat</TableHead>
-          <TableHead>Website</TableHead>
+          <TableHead><FilterHeader label="FinStat" values={leads.map(l => l.finstatLink ? "Has link" : "")} filter={filters.finstatLink || ""} setFilter={(v) => setFilter("finstatLink", v)} /></TableHead>
+          <TableHead><FilterHeader label="Website" values={leads.map(l => l.website ? "Has link" : "")} filter={filters.website || ""} setFilter={(v) => setFilter("website", v)} /></TableHead>
           <TableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></TableHead>
-          <TableHead>Case Reasoning</TableHead>
-          <TableHead>Manager Feedback</TableHead>
-          <TableHead>Decision</TableHead>
-          <TableHead>Manager</TableHead>
+          <TableHead><FilterHeader label="Reasoning" values={leads.map(l => l.reasoning)} filter={filters.reasoning || ""} setFilter={(v) => setFilter("reasoning", v)} /></TableHead>
+          <TableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></TableHead>
+          <TableHead><FilterHeader label="Decision" values={leads.map(l => l.managerDecision)} filter={filters.managerDecision || ""} setFilter={(v) => setFilter("managerDecision", v)} /></TableHead>
+          <TableHead><FilterHeader label="Manager" values={leads.map(l => l.managerAcronym)} filter={filters.managerAcronym || ""} setFilter={(v) => setFilter("managerAcronym", v)} /></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} />
+          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} onUpdate={onUpdate} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function TargetRow({ lead, onAction }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void }) {
+function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void; onUpdate: () => void }) {
   const [feedback, setFeedback] = useState(lead.managerFeedback);
   const [decision, setDecision] = useState<ManagerDecision>(lead.managerDecision || "");
   const [acronym, setAcronym] = useState(lead.managerAcronym || "");
@@ -140,6 +172,7 @@ function TargetRow({ lead, onAction }: { lead: Lead; onAction: (lead: Lead, deci
 
   return (
     <TableRow>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
       <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
       <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
       <TableCell className="text-xs">{lead.sector}</TableCell>
@@ -153,7 +186,12 @@ function TargetRow({ lead, onAction }: { lead: Lead; onAction: (lead: Lead, deci
       <TableCell><Badge variant="outline" className="text-xs">{lead.addedBy}</Badge></TableCell>
       <TableCell className="text-xs max-w-[150px] truncate" title={lead.reasoning}>{lead.reasoning || "—"}</TableCell>
       <TableCell>
-        <InlineInput value={feedback} onChange={setFeedback} placeholder="Feedback..." />
+        <Textarea
+          value={feedback}
+          onChange={(e) => setFeedback(e.target.value)}
+          placeholder="Manager feedback..."
+          className="text-xs min-w-[160px] min-h-[60px]"
+        />
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
@@ -184,16 +222,17 @@ function ApproachTable({ leads, filters, setFilter, onUpdate }: {
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10"></TableHead>
           <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
           <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
           <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
-          <TableHead>Date Added</TableHead>
-          <TableHead>Mgr Feedback</TableHead>
-          <TableHead>Contact</TableHead>
-          <TableHead>Approach Type</TableHead>
-          <TableHead>Approach Date</TableHead>
-          <TableHead>Response</TableHead>
-          <TableHead>Feedback</TableHead>
+          <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
+          <TableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></TableHead>
+          <TableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></TableHead>
+          <TableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></TableHead>
+          <TableHead><FilterHeader label="Approach Date" values={leads.map(l => l.approachDate)} filter={filters.approachDate || ""} setFilter={(v) => setFilter("approachDate", v)} /></TableHead>
+          <TableHead><FilterHeader label="Response" values={leads.map(l => l.approachResponse)} filter={filters.approachResponse || ""} setFilter={(v) => setFilter("approachResponse", v)} /></TableHead>
+          <TableHead><FilterHeader label="Client Feedback" values={leads.map(l => l.approachFeedback)} filter={filters.approachFeedback || ""} setFilter={(v) => setFilter("approachFeedback", v)} /></TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -214,10 +253,10 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
 
   const save = () => {
     const statusMap: Record<string, LeadStatus> = {
-      "Yes": "Yes",
-      "No response": "No Response",
-      "No": "Declined",
-      "Follow-up later": "Follow Up Later",
+      "Yes": "3.1 Yes - Proposal",
+      "No response": "2.2 No Response",
+      "No": "2.3 Declined",
+      "Follow-up later": "2.4 Follow Up Later",
     };
     const updates: Partial<Lead> = {
       contact, approachType, approachDate, approachResponse: response, approachFeedback: feedback,
@@ -231,12 +270,13 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
 
   return (
     <TableRow>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
       <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
       <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
       <TableCell className="text-xs">{lead.sector}</TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
-      <TableCell><InlineInput value={contact} onChange={setContact} placeholder="Contact..." /></TableCell>
+      <TableCell><Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact..." className="h-7 text-xs min-w-[100px]" /></TableCell>
       <TableCell>
         <Select value={approachType} onValueChange={(v) => setApproachType(v as ApproachType)}>
           <SelectTrigger className="h-7 text-xs min-w-[90px]"><SelectValue placeholder="—" /></SelectTrigger>
@@ -262,7 +302,7 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
-          <InlineInput value={feedback} onChange={setFeedback} placeholder="Feedback..." />
+          <Input value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Client feedback..." className="h-7 text-xs min-w-[100px]" />
           <Button size="sm" variant="secondary" className="h-7 text-xs px-2" onClick={save}>Save</Button>
         </div>
       </TableCell>
@@ -270,25 +310,28 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   );
 }
 
-function GenericTable({ leads, filters, setFilter }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void;
+function GenericTable({ leads, filters, setFilter, onUpdate }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
 }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
+          <TableHead className="w-10"></TableHead>
           <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
           <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
           <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
-          <TableHead>Date Added</TableHead>
-          <TableHead>Status</TableHead>
-          <TableHead>Contact</TableHead>
-          <TableHead>Feedback</TableHead>
+          <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
+          <TableHead><FilterHeader label="Status" values={leads.map(l => l.status)} filter={filters.status || ""} setFilter={(v) => setFilter("status", v)} /></TableHead>
+          <TableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></TableHead>
+          <TableHead><FilterHeader label="Feedback" values={leads.map(l => l.approachFeedback || l.managerFeedback)} filter={filters.feedback || ""} setFilter={(v) => setFilter("feedback", v)} /></TableHead>
+          <TableHead>Time Since Lead</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
           <TableRow key={lead.id}>
+            <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
             <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
             <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
             <TableCell className="text-xs">{lead.sector}</TableCell>
@@ -298,6 +341,7 @@ function GenericTable({ leads, filters, setFilter }: {
             </TableCell>
             <TableCell className="text-xs">{lead.contact || "—"}</TableCell>
             <TableCell className="text-xs">{lead.approachFeedback || lead.managerFeedback || "—"}</TableCell>
+            <TableCell className="text-xs font-mono">{daysSince(lead.date)} days</TableCell>
           </TableRow>
         ))}
       </TableBody>
@@ -313,6 +357,10 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
     return leads.filter((lead) => {
       return Object.entries(filters).every(([key, val]) => {
         if (!val) return true;
+        if (key === "feedback") {
+          const field = lead.approachFeedback || lead.managerFeedback || "";
+          return field.toLowerCase().includes(val.toLowerCase());
+        }
         const field = (lead as any)[key] as string;
         return field?.toLowerCase().includes(val.toLowerCase());
       });
@@ -333,7 +381,7 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
       ) : isApproach ? (
         <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
       ) : (
-        <GenericTable leads={filtered} filters={filters} setFilter={setFilter} />
+        <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
       )}
     </div>
   );
