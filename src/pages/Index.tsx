@@ -4,7 +4,7 @@ import { getLeads } from "@/lib/leads-store";
 import { Lead, LeadStatus } from "@/lib/types";
 import LeadForm from "@/components/LeadForm";
 import LeadTable from "@/components/LeadTable";
-import { PlusCircle, Target, Phone, CheckCircle, XCircle, Clock, FileText, Award, LayoutDashboard } from "lucide-react";
+import { PlusCircle, Target, Phone, CheckCircle, XCircle, Clock, Award, LayoutDashboard } from "lucide-react";
 
 const PIPELINE_TABS: { label: string; statuses: LeadStatus[]; icon: React.ReactNode; color: string; outline?: boolean; checkmark?: boolean }[] = [
   { label: "All", statuses: [], icon: <LayoutDashboard className="h-4 w-4" />, color: "#00338D" },
@@ -27,7 +27,7 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-primary text-primary-foreground">
-        <div className="mx-auto flex items-center justify-between h-14 px-6 max-w-[1600px]">
+        <div className="mx-auto flex items-center justify-between h-14 px-4 max-w-[1920px]">
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold tracking-tight">KPMG</span>
             <span className="text-sm font-medium opacity-80">Deal Advisory — BUSDE Tracker</span>
@@ -36,7 +36,7 @@ export default function Index() {
         </div>
       </header>
 
-      <main className="mx-auto px-6 py-6 space-y-6 max-w-[1600px]">
+      <main className="mx-auto px-4 py-6 space-y-6 max-w-[1920px]">
         <Tabs defaultValue="pipeline">
           <TabsList className="mb-4">
             <TabsTrigger value="new" className="gap-1.5"><PlusCircle className="h-4 w-4" /> Lead Input</TabsTrigger>
@@ -58,7 +58,7 @@ export default function Index() {
                     <TabsTrigger
                       key={t.label}
                       value={t.label}
-                      className="gap-1.5 text-xs text-white border-0 data-[state=active]:shadow-md data-[state=active]:scale-105 transition-all"
+                      className="gap-1.5 text-xs border-0 transition-all data-[state=active]:scale-105 data-[state=active]:ring-2 data-[state=active]:ring-offset-2 data-[state=active]:ring-foreground/30"
                       style={{
                         backgroundColor: t.outline ? "transparent" : t.color,
                         border: t.outline ? `2px solid #00338D` : "none",
