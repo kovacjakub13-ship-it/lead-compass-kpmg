@@ -322,11 +322,11 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
       {/* Pre-response: auto-save on blur */}
       <TableCell>
-        <Input value={contact} onChange={(e) => setContact(e.target.value)} onBlur={savePreResponse} placeholder="Contact..." className="h-7 text-xs min-w-[100px] bg-blue-50/50 dark:bg-blue-950/20" />
+        <Input value={contact} onChange={(e) => setContact(e.target.value)} onBlur={savePreResponse} placeholder="Contact..." className="h-7 text-xs min-w-[100px] bg-muted/50" />
       </TableCell>
       <TableCell>
-        <Select value={approachType} onValueChange={(v) => { setApproachType(v as ApproachType); setTimeout(() => { updateLead(lead.id, { approachType: v }); }, 0); }}>
-          <SelectTrigger className="h-7 text-xs min-w-[90px] bg-blue-50/50 dark:bg-blue-950/20"><SelectValue placeholder="—" /></SelectTrigger>
+        <Select value={approachType} onValueChange={(v) => { const at = v as ApproachType; setApproachType(at); setTimeout(() => { updateLead(lead.id, { approachType: at }); }, 0); }}>
+          <SelectTrigger className="h-7 text-xs min-w-[90px] bg-muted/50"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Email">Email</SelectItem>
             <SelectItem value="Phone">Phone</SelectItem>
