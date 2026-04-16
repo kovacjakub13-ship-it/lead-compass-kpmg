@@ -10,11 +10,11 @@ const PIPELINE_TABS: { label: string; statuses: LeadStatus[]; icon: React.ReactN
   { label: "All", statuses: [], icon: <LayoutDashboard className="h-4 w-4" />, color: "#00338D" },
   { label: "Target Identified", statuses: ["1.1 Target Identified"], icon: <Target className="h-4 w-4" />, color: "#00B8F5" },
   { label: "Approach", statuses: ["1.2 Approach"], icon: <Phone className="h-4 w-4" />, color: "#1E49E2" },
-  { label: "Yes - Proposal", statuses: ["3.1 Yes - Proposal"], icon: <CheckCircle className="h-4 w-4" />, color: "#FD349C" },
+  { label: "Yes - Proposal", statuses: ["2.1 Yes - Proposal"], icon: <CheckCircle className="h-4 w-4" />, color: "#FD349C" },
   { label: "No Response", statuses: ["2.2 No Response"], icon: <Clock className="h-4 w-4" />, color: "#FFC000" },
   { label: "Declined", statuses: ["2.3 Declined"], icon: <XCircle className="h-4 w-4" />, color: "#C00000" },
   { label: "Follow Up", statuses: ["2.4 Follow Up Later"], icon: <Clock className="h-4 w-4" />, color: "#7213EA" },
-  { label: "Client Mandate", statuses: ["4.1 Client Mandate"], icon: <Award className="h-4 w-4" />, color: "transparent", outline: true, checkmark: true },
+  { label: "Client Mandate", statuses: ["3.1 Client Mandate"], icon: <Award className="h-4 w-4" />, color: "transparent", outline: true, checkmark: true },
 ];
 
 export default function Index() {
@@ -27,7 +27,7 @@ export default function Index() {
   return (
     <div className="min-h-screen">
       <header className="border-b bg-primary text-primary-foreground">
-        <div className="container flex items-center justify-between h-14 px-4">
+        <div className="mx-auto flex items-center justify-between h-14 px-6 max-w-[1600px]">
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold tracking-tight">KPMG</span>
             <span className="text-sm font-medium opacity-80">Deal Advisory — BUSDE Tracker</span>
@@ -36,7 +36,7 @@ export default function Index() {
         </div>
       </header>
 
-      <main className="container px-4 py-6 space-y-6">
+      <main className="mx-auto px-6 py-6 space-y-6 max-w-[1600px]">
         <Tabs defaultValue="pipeline">
           <TabsList className="mb-4">
             <TabsTrigger value="new" className="gap-1.5"><PlusCircle className="h-4 w-4" /> Lead Input</TabsTrigger>
