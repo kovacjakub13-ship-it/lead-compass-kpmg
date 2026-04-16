@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { Lead, LeadStatus, ManagerDecision, ApproachType, ApproachResponse } from "@/lib/types";
 import { updateLead, deleteLead, duplicateLead, getLeads } from "@/lib/leads-store";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Download } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -124,6 +125,39 @@ function daysSince(dateStr: string): number {
   return differenceInDays(new Date(), new Date(dateStr));
 }
 
+/* ---- Resizable column header ---- */
+function ResizableHead({ children, minWidth = 60 }: { children: React.ReactNode; minWidth?: number }) {
+  const ref = useRef<HTMLTableCellElement>(null);
+  const [width, setWidth] = useState<number | undefined>(undefined);
+
+  const onMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const startX = e.clientX;
+    const startWidth = ref.current?.offsetWidth || 100;
+    const onMove = (ev: MouseEvent) => {
+      const newW = Math.max(minWidth, startWidth + ev.clientX - startX);
+      setWidth(newW);
+    };
+    const onUp = () => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+    };
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, [minWidth]);
+
+  return (
+    <TableHead ref={ref} style={width ? { width, minWidth: width } : {}} className="relative">
+      {children}
+      <div
+        onMouseDown={onMouseDown}
+        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 bg-border"
+      />
+    </TableHead>
+  );
+}
+
+/* ===================== TARGET IDENTIFIED ===================== */
 function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
   leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
 }) {
@@ -141,17 +175,17 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
       <TableHeader>
         <TableRow>
           <TableHead className="w-10"></TableHead>
-          <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
-          <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
-          <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
-          <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
-          <TableHead><FilterHeader label="FinStat" values={leads.map(l => l.finstatLink ? "Has link" : "")} filter={filters.finstatLink || ""} setFilter={(v) => setFilter("finstatLink", v)} /></TableHead>
-          <TableHead><FilterHeader label="Website" values={leads.map(l => l.website ? "Has link" : "")} filter={filters.website || ""} setFilter={(v) => setFilter("website", v)} /></TableHead>
-          <TableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></TableHead>
-          <TableHead><FilterHeader label="Reasoning" values={leads.map(l => l.reasoning)} filter={filters.reasoning || ""} setFilter={(v) => setFilter("reasoning", v)} /></TableHead>
-          <TableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></TableHead>
-          <TableHead><FilterHeader label="Decision" values={leads.map(l => l.managerDecision)} filter={filters.managerDecision || ""} setFilter={(v) => setFilter("managerDecision", v)} /></TableHead>
-          <TableHead><FilterHeader label="Manager" values={leads.map(l => l.managerAcronym)} filter={filters.managerAcronym || ""} setFilter={(v) => setFilter("managerAcronym", v)} /></TableHead>
+          <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="FinStat" values={leads.map(l => l.finstatLink ? "Has link" : "")} filter={filters.finstatLink || ""} setFilter={(v) => setFilter("finstatLink", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Website" values={leads.map(l => l.website ? "Has link" : "")} filter={filters.website || ""} setFilter={(v) => setFilter("website", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Reasoning" values={leads.map(l => l.reasoning)} filter={filters.reasoning || ""} setFilter={(v) => setFilter("reasoning", v)} /></ResizableHead>
+          <ResizableHead minWidth={160}><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Decision" values={leads.map(l => l.managerDecision)} filter={filters.managerDecision || ""} setFilter={(v) => setFilter("managerDecision", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Manager" values={leads.map(l => l.managerAcronym)} filter={filters.managerAcronym || ""} setFilter={(v) => setFilter("managerAcronym", v)} /></ResizableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -190,7 +224,7 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
           value={feedback}
           onChange={(e) => setFeedback(e.target.value)}
           placeholder="Manager feedback..."
-          className="text-xs min-w-[160px] min-h-[60px]"
+          className="text-xs min-w-[160px] min-h-[80px]"
         />
       </TableCell>
       <TableCell>
@@ -215,6 +249,7 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
   );
 }
 
+/* ===================== APPROACH ===================== */
 function ApproachTable({ leads, filters, setFilter, onUpdate }: {
   leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
 }) {
@@ -223,16 +258,20 @@ function ApproachTable({ leads, filters, setFilter, onUpdate }: {
       <TableHeader>
         <TableRow>
           <TableHead className="w-10"></TableHead>
-          <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
-          <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
-          <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
-          <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
-          <TableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></TableHead>
-          <TableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></TableHead>
-          <TableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></TableHead>
-          <TableHead><FilterHeader label="Approach Date" values={leads.map(l => l.approachDate)} filter={filters.approachDate || ""} setFilter={(v) => setFilter("approachDate", v)} /></TableHead>
-          <TableHead><FilterHeader label="Response" values={leads.map(l => l.approachResponse)} filter={filters.approachResponse || ""} setFilter={(v) => setFilter("approachResponse", v)} /></TableHead>
-          <TableHead><FilterHeader label="Client Feedback" values={leads.map(l => l.approachFeedback)} filter={filters.approachFeedback || ""} setFilter={(v) => setFilter("approachFeedback", v)} /></TableHead>
+          <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
+          {/* Pre-response section */}
+          <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Approach Date" values={leads.map(l => l.approachDate)} filter={filters.approachDate || ""} setFilter={(v) => setFilter("approachDate", v)} /></ResizableHead>
+          {/* Separator column */}
+          <TableHead className="w-[2px] p-0"><div className="w-[3px] h-full bg-primary/30 mx-auto" /></TableHead>
+          {/* Post-response section */}
+          <ResizableHead><FilterHeader label="Response" values={leads.map(l => l.approachResponse)} filter={filters.approachResponse || ""} setFilter={(v) => setFilter("approachResponse", v)} /></ResizableHead>
+          <ResizableHead minWidth={180}><FilterHeader label="Client Feedback" values={leads.map(l => l.approachFeedback)} filter={filters.approachFeedback || ""} setFilter={(v) => setFilter("approachFeedback", v)} /></ResizableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -251,7 +290,12 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   const [response, setResponse] = useState<ApproachResponse>(lead.approachResponse || "");
   const [feedback, setFeedback] = useState(lead.approachFeedback || "");
 
-  const save = () => {
+  // Auto-save pre-response fields on blur / change
+  const savePreResponse = useCallback(() => {
+    updateLead(lead.id, { contact, approachType, approachDate });
+  }, [lead.id, contact, approachType, approachDate]);
+
+  const savePostResponse = () => {
     const statusMap: Record<string, LeadStatus> = {
       "Yes": "3.1 Yes - Proposal",
       "No response": "2.2 No Response",
@@ -276,10 +320,13 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       <TableCell className="text-xs">{lead.sector}</TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
-      <TableCell><Input value={contact} onChange={(e) => setContact(e.target.value)} placeholder="Contact..." className="h-7 text-xs min-w-[100px]" /></TableCell>
+      {/* Pre-response: auto-save on blur */}
       <TableCell>
-        <Select value={approachType} onValueChange={(v) => setApproachType(v as ApproachType)}>
-          <SelectTrigger className="h-7 text-xs min-w-[90px]"><SelectValue placeholder="—" /></SelectTrigger>
+        <Input value={contact} onChange={(e) => setContact(e.target.value)} onBlur={savePreResponse} placeholder="Contact..." className="h-7 text-xs min-w-[100px] bg-blue-50/50 dark:bg-blue-950/20" />
+      </TableCell>
+      <TableCell>
+        <Select value={approachType} onValueChange={(v) => { setApproachType(v as ApproachType); setTimeout(() => { updateLead(lead.id, { approachType: v }); }, 0); }}>
+          <SelectTrigger className="h-7 text-xs min-w-[90px] bg-blue-50/50 dark:bg-blue-950/20"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Email">Email</SelectItem>
             <SelectItem value="Phone">Phone</SelectItem>
@@ -288,7 +335,14 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
           </SelectContent>
         </Select>
       </TableCell>
-      <TableCell><DatePickerCell value={approachDate} onChange={setApproachDate} /></TableCell>
+      <TableCell>
+        <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded">
+          <DatePickerCell value={approachDate} onChange={(v) => { setApproachDate(v); updateLead(lead.id, { approachDate: v }); }} />
+        </div>
+      </TableCell>
+      {/* Visual separator */}
+      <TableCell className="w-[2px] p-0"><div className="w-[3px] h-full bg-primary/30 mx-auto min-h-[40px]" /></TableCell>
+      {/* Post-response */}
       <TableCell>
         <Select value={response} onValueChange={(v) => setResponse(v as ApproachResponse)}>
           <SelectTrigger className="h-7 text-xs min-w-[110px]"><SelectValue placeholder="—" /></SelectTrigger>
@@ -302,14 +356,15 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       </TableCell>
       <TableCell>
         <div className="flex items-center gap-1">
-          <Input value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Client feedback..." className="h-7 text-xs min-w-[100px]" />
-          <Button size="sm" variant="secondary" className="h-7 text-xs px-2" onClick={save}>Save</Button>
+          <Input value={feedback} onChange={(e) => setFeedback(e.target.value)} placeholder="Client feedback..." className="h-7 text-xs min-w-[180px]" />
+          <Button size="sm" variant="secondary" className="h-7 text-xs px-2" onClick={savePostResponse}>Save</Button>
         </div>
       </TableCell>
     </TableRow>
   );
 }
 
+/* ===================== GENERIC / ALL ===================== */
 function GenericTable({ leads, filters, setFilter, onUpdate }: {
   leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
 }) {
@@ -318,14 +373,14 @@ function GenericTable({ leads, filters, setFilter, onUpdate }: {
       <TableHeader>
         <TableRow>
           <TableHead className="w-10"></TableHead>
-          <TableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></TableHead>
-          <TableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></TableHead>
-          <TableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></TableHead>
-          <TableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></TableHead>
-          <TableHead><FilterHeader label="Status" values={leads.map(l => l.status)} filter={filters.status || ""} setFilter={(v) => setFilter("status", v)} /></TableHead>
-          <TableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></TableHead>
-          <TableHead><FilterHeader label="Feedback" values={leads.map(l => l.approachFeedback || l.managerFeedback)} filter={filters.feedback || ""} setFilter={(v) => setFilter("feedback", v)} /></TableHead>
-          <TableHead>Time Since Lead</TableHead>
+          <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Status" values={leads.map(l => l.status)} filter={filters.status || ""} setFilter={(v) => setFilter("status", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Feedback" values={leads.map(l => l.approachFeedback || l.managerFeedback)} filter={filters.feedback || ""} setFilter={(v) => setFilter("feedback", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Time Since Lead" values={leads.map(l => `${daysSince(l.date)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -360,6 +415,9 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
         if (key === "feedback") {
           const field = lead.approachFeedback || lead.managerFeedback || "";
           return field.toLowerCase().includes(val.toLowerCase());
+        }
+        if (key === "timeSince") {
+          return `${daysSince(lead.date)} days`.includes(val);
         }
         const field = (lead as any)[key] as string;
         return field?.toLowerCase().includes(val.toLowerCase());
