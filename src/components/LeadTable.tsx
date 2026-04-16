@@ -336,7 +336,7 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
         </Select>
       </TableCell>
       <TableCell>
-        <div className="bg-blue-50/50 dark:bg-blue-950/20 rounded">
+        <div className="bg-muted/50 rounded">
           <DatePickerCell value={approachDate} onChange={(v) => { setApproachDate(v); updateLead(lead.id, { approachDate: v }); }} />
         </div>
       </TableCell>
