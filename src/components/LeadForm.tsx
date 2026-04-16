@@ -90,11 +90,11 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label>Company Name</Label>
-          <Input value={form.companyName} onChange={(e) => set("companyName", e.target.value)} placeholder="e.g. Slovenská sporiteľňa" />
+          <Input value={form.companyName} onChange={(e) => set("companyName", e.target.value)} />
         </div>
         <div className="space-y-1.5">
           <Label>IČO</Label>
-          <Input value={form.ico} onChange={(e) => set("ico", e.target.value)} placeholder="e.g. 00151653" />
+          <Input value={form.ico} onChange={(e) => set("ico", e.target.value)} />
         </div>
         <div className="space-y-1.5">
           <Label>Sector</Label>
@@ -106,7 +106,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
         {form.sector === "Other" && (
           <div className="space-y-1.5">
             <Label>Custom Sector</Label>
-            <Input value={form.customSector} onChange={(e) => set("customSector", e.target.value)} placeholder="Enter sector name" />
+            <Input value={form.customSector} onChange={(e) => set("customSector", e.target.value)} />
           </div>
         )}
         <div className="space-y-1.5">
@@ -122,7 +122,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
         </div>
         <div className="space-y-1.5">
           <Label>Originator (Initials)</Label>
-          <Input value={form.addedBy} onChange={(e) => set("addedBy", e.target.value.toUpperCase())} placeholder="e.g. JK" maxLength={5} />
+          <Input value={form.addedBy} onChange={(e) => set("addedBy", e.target.value.toUpperCase())} maxLength={5} />
         </div>
         <div className="space-y-1.5">
           <Label>Website</Label>
@@ -135,7 +135,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
       </div>
       <div className="space-y-1.5">
         <Label>Case Reasoning</Label>
-        <Textarea value={form.reasoning} onChange={(e) => set("reasoning", e.target.value)} placeholder="Why is this company a good lead?" rows={3} />
+        <Textarea value={form.reasoning} onChange={(e) => set("reasoning", e.target.value)} rows={3} />
       </div>
       <Button type="submit" className="w-full sm:w-auto gap-2">
         <Send className="h-4 w-4" /> Submit Lead
