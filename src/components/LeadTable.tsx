@@ -9,7 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Download } from "lucide-react";
+import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Download, Search } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -123,6 +123,27 @@ function daysSince(dateStr: string): number {
   return differenceInDays(new Date(), new Date(dateStr));
 }
 
+/* ---- Editable text cell ---- */
+function EditableCell({ value, field, leadId, onUpdate, className: extraClass }: {
+  value: string; field: string; leadId: string; onUpdate: () => void; className?: string;
+}) {
+  const [val, setVal] = useState(value || "");
+  const save = () => {
+    if (val !== value) {
+      updateLead(leadId, { [field]: val });
+      onUpdate();
+    }
+  };
+  return (
+    <Input
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={save}
+      className={cn("h-7 text-xs border-transparent hover:border-input focus:border-input bg-transparent", extraClass)}
+    />
+  );
+}
+
 /* ---- Resizable column header ---- */
 function ResizableHead({ children, minWidth = 60 }: { children: React.ReactNode; minWidth?: number }) {
   const ref = useRef<HTMLTableCellElement>(null);
@@ -145,13 +166,28 @@ function ResizableHead({ children, minWidth = 60 }: { children: React.ReactNode;
   }, [minWidth]);
 
   return (
-    <TableHead ref={ref} style={width ? { width, minWidth: width } : {}} className="relative">
+    <TableHead ref={ref} style={width ? { width, minWidth: width } : {}} className="relative whitespace-nowrap">
       {children}
       <div
         onMouseDown={onMouseDown}
         className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/30 bg-border"
       />
     </TableHead>
+  );
+}
+
+/* ---- Search box ---- */
+function SearchBox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="relative w-64 mb-3">
+      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="Search by company name..."
+        className="h-8 text-xs pl-8"
+      />
+    </div>
   );
 }
 
@@ -205,18 +241,18 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
   return (
     <TableRow>
       <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
-      <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
-      <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
-      <TableCell className="text-xs">{lead.sector}</TableCell>
-      <TableCell className="text-xs">{lead.date}</TableCell>
+      <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
+      <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.date} field="date" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell>
         {lead.finstatLink ? <a href={lead.finstatLink} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
       <TableCell>
         {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
-      <TableCell><Badge variant="outline" className="text-xs">{lead.addedBy}</Badge></TableCell>
-      <TableCell className="text-xs max-w-[150px] truncate" title={lead.reasoning}>{lead.reasoning || "—"}</TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
+      <TableCell><EditableCell value={lead.reasoning} field="reasoning" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell>
         <Input
           value={feedback}
@@ -289,6 +325,18 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
     onUpdate();
   }, [lead.id, onUpdate]);
 
+  const handleApproachTypeChange = (v: string) => {
+    const at = v as ApproachType;
+    setApproachType(at);
+    saveField("approachType", at);
+    // Auto-populate today's date when approach type is selected
+    if (!approachDate) {
+      const today = new Date().toISOString().split("T")[0];
+      setApproachDate(today);
+      saveField("approachDate", today);
+    }
+  };
+
   const savePostResponse = () => {
     const statusMap: Record<string, LeadStatus> = {
       "Yes": "2.1 Yes - Proposal",
@@ -311,9 +359,9 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   return (
     <TableRow>
       <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
-      <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
-      <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
-      <TableCell className="text-xs">{lead.sector}</TableCell>
+      <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
+      <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
       <TableCell>
@@ -329,11 +377,7 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
         />
       </TableCell>
       <TableCell>
-        <Select value={approachType} onValueChange={(v) => {
-          const at = v as ApproachType;
-          setApproachType(at);
-          saveField("approachType", at);
-        }}>
+        <Select value={approachType} onValueChange={handleApproachTypeChange}>
           <SelectTrigger className="h-7 text-xs min-w-[90px] bg-muted/50"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Email">Email</SelectItem>
@@ -419,34 +463,35 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
     }
   };
 
-  const handleFollowUpResponse = (val: FollowUpResponse) => {
+  const handleFollowUpResponseChange = (val: FollowUpResponse) => {
     setFollowUpResponse(val);
+    // Just store the selection, don't move yet — wait for Save
+  };
+
+  const saveFollowUp = () => {
     const statusMap: Record<string, LeadStatus> = {
       "Yes": "2.1 Yes - Proposal",
       "No response": "2.2 No Response",
       "Follow-up later": "2.4 Follow Up Later",
-      "No": "2.3 Declined",
+      "Declined": "2.3 Declined",
     };
-    const updates: Partial<Lead> = { followUpResponse: val, followUpFeedback };
-    if (val && statusMap[val] && statusMap[val] !== "2.2 No Response") {
-      updates.status = statusMap[val];
+    const updates: Partial<Lead> = { followUpResponse, followUpFeedback };
+    if (followUpResponse && statusMap[followUpResponse] && statusMap[followUpResponse] !== "2.2 No Response") {
+      updates.status = statusMap[followUpResponse];
     }
     updateLead(lead.id, updates);
     onUpdate();
-  };
-
-  const saveFeedback = () => {
-    updateLead(lead.id, { followUpFeedback });
+    toast.success("Follow-up saved");
   };
 
   return (
     <TableRow>
       <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
-      <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
-      <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
-      <TableCell className="text-xs">{lead.sector}</TableCell>
+      <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
+      <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
-      <TableCell className="text-xs">{lead.contact || "—"}</TableCell>
+      <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.approachType || "—"}</TableCell>
       <TableCell className="text-xs font-mono">{lead.approachDate ? `${daysSince(lead.approachDate)} days` : "—"}</TableCell>
       <TableCell>
@@ -460,22 +505,22 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
       </TableCell>
       <TableCell>
         {followedUp === "Yes" ? (
-          <Select value={followUpResponse} onValueChange={(v) => handleFollowUpResponse(v as FollowUpResponse)}>
+          <Select value={followUpResponse} onValueChange={(v) => handleFollowUpResponseChange(v as FollowUpResponse)}>
             <SelectTrigger className="h-7 text-xs min-w-[110px]"><SelectValue placeholder="—" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Yes">Yes</SelectItem>
               <SelectItem value="No response">No response</SelectItem>
               <SelectItem value="Follow-up later">Follow-up later</SelectItem>
-              <SelectItem value="No">No</SelectItem>
+              <SelectItem value="Declined">Declined</SelectItem>
             </SelectContent>
           </Select>
         ) : <span className="text-xs text-muted-foreground">—</span>}
       </TableCell>
       <TableCell>
-        {followedUp === "Yes" && followUpResponse ? (
+        {followedUp === "Yes" ? (
           <div className="flex items-center gap-1">
             <Input value={followUpFeedback} onChange={(e) => setFollowUpFeedback(e.target.value)} placeholder="Client feedback..." className="h-7 text-xs min-w-[150px]" />
-            <Button size="sm" variant="secondary" className="h-7 text-xs px-2" onClick={saveFeedback}>Save</Button>
+            <Button size="sm" variant="secondary" className="h-7 text-xs px-2" onClick={saveFollowUp}>Save</Button>
           </div>
         ) : <span className="text-xs text-muted-foreground">—</span>}
       </TableCell>
@@ -505,12 +550,12 @@ function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
         {leads.map((lead) => (
           <TableRow key={lead.id}>
             <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
-            <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
-            <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
-            <TableCell className="text-xs">{lead.sector}</TableCell>
+            <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+            <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
+            <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs">{lead.date}</TableCell>
-            <TableCell className="text-xs">{lead.contact || "—"}</TableCell>
-            <TableCell className="text-xs">{lead.approachFeedback || "—"}</TableCell>
+            <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+            <TableCell><EditableCell value={lead.approachFeedback} field="approachFeedback" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs font-mono">{daysSince(lead.responseDate || lead.date)} days</TableCell>
           </TableRow>
         ))}
@@ -538,22 +583,22 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
           )}
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Feedback" values={leads.map(l => l.approachFeedback || l.managerFeedback)} filter={filters.feedback || ""} setFilter={(v) => setFilter("feedback", v)} /></ResizableHead>
-          <ResizableHead><FilterHeader label={activeTab === "All" ? "Time Since Lead" : "Time Since Lead"} values={leads.map(l => `${daysSince(l.date)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Time Since Lead" values={leads.map(l => `${daysSince(l.date)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
           <TableRow key={lead.id}>
             <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
-            <TableCell className="font-medium text-xs">{lead.companyName}</TableCell>
-            <TableCell className="font-mono text-xs">{lead.ico}</TableCell>
-            <TableCell className="text-xs">{lead.sector}</TableCell>
+            <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+            <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
+            <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs">{lead.date}</TableCell>
-            <TableCell><Badge variant="outline" className="text-xs">{lead.addedBy}</Badge></TableCell>
+            <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
             {activeTab === "All" && (
               <TableCell><Badge variant="outline" className="text-xs">{lead.status}</Badge></TableCell>
             )}
-            <TableCell className="text-xs">{lead.contact || "—"}</TableCell>
+            <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs">{lead.approachFeedback || lead.managerFeedback || "—"}</TableCell>
             <TableCell className="text-xs font-mono">{daysSince(lead.date)} days</TableCell>
           </TableRow>
@@ -565,10 +610,13 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
 
 export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
   const [filters, setFilters] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState("");
   const setFilter = (key: string, value: string) => setFilters((p) => ({ ...p, [key]: value }));
 
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
+      // Global company name search
+      if (search && !lead.companyName.toLowerCase().includes(search.toLowerCase())) return false;
       return Object.entries(filters).every(([key, val]) => {
         if (!val) return true;
         if (key === "feedback") {
@@ -582,7 +630,7 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
         return field?.toLowerCase().includes(val.toLowerCase());
       });
     });
-  }, [leads, filters]);
+  }, [leads, filters, search]);
 
   if (leads.length === 0) {
     return <p className="text-center py-12 text-muted-foreground">No leads in this category yet.</p>;
@@ -594,18 +642,21 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
   const isDeclined = activeTab === "Declined";
 
   return (
-    <div className="rounded-lg border bg-card overflow-x-auto">
-      {isTargetIdentified ? (
-        <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
-      ) : isApproach ? (
-        <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
-      ) : isNoResponse ? (
-        <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
-      ) : isDeclined ? (
-        <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
-      ) : (
-        <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} />
-      )}
+    <div>
+      <SearchBox value={search} onChange={setSearch} />
+      <div className="rounded-lg border bg-card overflow-x-auto">
+        {isTargetIdentified ? (
+          <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+        ) : isApproach ? (
+          <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+        ) : isNoResponse ? (
+          <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+        ) : isDeclined ? (
+          <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+        ) : (
+          <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} />
+        )}
+      </div>
     </div>
   );
 }

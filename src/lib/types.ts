@@ -10,7 +10,7 @@ export type LeadStatus =
 export type ManagerDecision = "Yes" | "No" | "On hold" | "";
 export type ApproachType = "Email" | "Phone" | "Linkedin" | "Personal" | "";
 export type ApproachResponse = "Yes" | "No response" | "Declined" | "Follow-up later" | "";
-export type FollowUpResponse = "Yes" | "No response" | "Follow-up later" | "No" | "";
+export type FollowUpResponse = "Yes" | "No response" | "Follow-up later" | "Declined" | "";
 
 export interface Lead {
   id: string;
