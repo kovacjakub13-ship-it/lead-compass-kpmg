@@ -286,7 +286,8 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
 
   const saveField = useCallback((field: string, value: string) => {
     updateLead(lead.id, { [field]: value });
-  }, [lead.id]);
+    onUpdate();
+  }, [lead.id, onUpdate]);
 
   const savePostResponse = () => {
     const statusMap: Record<string, LeadStatus> = {
@@ -318,14 +319,21 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       <TableCell>
         <Input
           value={contact}
-          onChange={(e) => setContact(e.target.value)}
-          onBlur={() => saveField("contact", contact)}
+          onChange={(e) => {
+            const nextValue = e.target.value;
+            setContact(nextValue);
+            saveField("contact", nextValue);
+          }}
           placeholder="Contact..."
           className="h-7 text-xs min-w-[100px] bg-muted/50"
         />
       </TableCell>
       <TableCell>
-        <Select value={approachType} onValueChange={(v) => { const at = v as ApproachType; setApproachType(at); updateLead(lead.id, { approachType: at }); }}>
+        <Select value={approachType} onValueChange={(v) => {
+          const at = v as ApproachType;
+          setApproachType(at);
+          saveField("approachType", at);
+        }}>
           <SelectTrigger className="h-7 text-xs min-w-[90px] bg-muted/50"><SelectValue placeholder="—" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="Email">Email</SelectItem>
@@ -337,7 +345,10 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
       </TableCell>
       <TableCell>
         <div className="bg-muted/50 rounded">
-          <DatePickerCell value={approachDate} onChange={(v) => { setApproachDate(v); updateLead(lead.id, { approachDate: v }); }} />
+          <DatePickerCell value={approachDate} onChange={(v) => {
+            setApproachDate(v);
+            saveField("approachDate", v);
+          }} />
         </div>
       </TableCell>
       <TableCell className="w-[2px] p-0"><div className="w-[3px] h-full bg-primary/30 mx-auto min-h-[40px]" /></TableCell>
