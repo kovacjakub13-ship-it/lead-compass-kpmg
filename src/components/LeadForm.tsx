@@ -70,6 +70,10 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
       approachDate: "",
       approachResponse: "",
       approachFeedback: "",
+      responseDate: "",
+      followedUp: "",
+      followUpResponse: "",
+      followUpFeedback: "",
     };
 
     addLead(lead);
