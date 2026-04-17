@@ -99,26 +99,29 @@ function FilterHeader({ label, values, filter, setFilter }: {
   );
 }
 
-function RowActions({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function RowActions({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={() => { duplicateLead(lead.id); toast.success("Lead duplicated"); onUpdate(); }}>
-          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => exportLeadsToExcel([lead])}>
-          <Download className="h-3.5 w-3.5 mr-2" /> Export
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive" onClick={() => { deleteLead(lead.id); toast.success("Lead deleted"); onUpdate(); }}>
-          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center gap-1.5">
+      <SelectCell id={lead.id} selected={selection.selected} toggle={selection.toggle} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => { duplicateLead(lead.id); toast.success("Lead duplicated"); onUpdate(); }}>
+            <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => exportLeadsToExcel([lead])}>
+            <Download className="h-3.5 w-3.5 mr-2" /> Export
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive" onClick={() => { deleteLead(lead.id); toast.success("Lead deleted"); onUpdate(); }}>
+            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
