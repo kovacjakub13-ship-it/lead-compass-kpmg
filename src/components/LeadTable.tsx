@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,6 +14,34 @@ import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Downloa
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+/* ---- Selection context (passed via props) ---- */
+type SelectionProps = {
+  selected: Set<string>;
+  toggle: (id: string) => void;
+  toggleAll: (ids: string[]) => void;
+  allSelected: (ids: string[]) => boolean;
+};
+
+function SelectCell({ id, selected, toggle }: { id: string; selected: Set<string>; toggle: (id: string) => void }) {
+  return (
+    <Checkbox
+      checked={selected.has(id)}
+      onCheckedChange={() => toggle(id)}
+      aria-label="Select row"
+    />
+  );
+}
+
+function SelectAllHead({ ids, selection }: { ids: string[]; selection: SelectionProps }) {
+  return (
+    <Checkbox
+      checked={ids.length > 0 && selection.allSelected(ids)}
+      onCheckedChange={() => selection.toggleAll(ids)}
+      aria-label="Select all"
+    />
+  );
+}
 
 interface Props {
   leads: Lead[];
@@ -70,26 +99,29 @@ function FilterHeader({ label, values, filter, setFilter }: {
   );
 }
 
-function RowActions({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function RowActions({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="start">
-        <DropdownMenuItem onClick={() => { duplicateLead(lead.id); toast.success("Lead duplicated"); onUpdate(); }}>
-          <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => exportLeadsToExcel([lead])}>
-          <Download className="h-3.5 w-3.5 mr-2" /> Export
-        </DropdownMenuItem>
-        <DropdownMenuItem className="text-destructive" onClick={() => { deleteLead(lead.id); toast.success("Lead deleted"); onUpdate(); }}>
-          <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex items-center gap-1.5">
+      <SelectCell id={lead.id} selected={selection.selected} toggle={selection.toggle} />
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+            <MoreVertical className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start">
+          <DropdownMenuItem onClick={() => { duplicateLead(lead.id); toast.success("Lead duplicated"); onUpdate(); }}>
+            <Copy className="h-3.5 w-3.5 mr-2" /> Duplicate
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => exportLeadsToExcel([lead])}>
+            <Download className="h-3.5 w-3.5 mr-2" /> Export
+          </DropdownMenuItem>
+          <DropdownMenuItem className="text-destructive" onClick={() => { deleteLead(lead.id); toast.success("Lead deleted"); onUpdate(); }}>
+            <Trash2 className="h-3.5 w-3.5 mr-2" /> Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
   );
 }
 
@@ -192,8 +224,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 /* ===================== TARGET IDENTIFIED ===================== */
-function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
   const handleManagerAction = (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => {
     const updates: Partial<Lead> = { managerDecision: decision, managerFeedback: feedback, managerAcronym: acronym };
@@ -204,18 +236,19 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
     onUpdate();
   };
 
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="FinStat" values={leads.map(l => l.finstatLink ? "Has link" : "")} filter={filters.finstatLink || ""} setFilter={(v) => setFilter("finstatLink", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Website" values={leads.map(l => l.website ? "Has link" : "")} filter={filters.website || ""} setFilter={(v) => setFilter("website", v)} /></ResizableHead>
-          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Reasoning" values={leads.map(l => l.reasoning)} filter={filters.reasoning || ""} setFilter={(v) => setFilter("reasoning", v)} /></ResizableHead>
           <ResizableHead minWidth={120}><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Decision" values={leads.map(l => l.managerDecision)} filter={filters.managerDecision || ""} setFilter={(v) => setFilter("managerDecision", v)} /></ResizableHead>
@@ -224,14 +257,14 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} onUpdate={onUpdate} />
+          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void; onUpdate: () => void }) {
+function TargetRow({ lead, onAction, onUpdate, selection }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void; onUpdate: () => void; selection: SelectionProps }) {
   const [feedback, setFeedback] = useState(lead.managerFeedback);
   const [decision, setDecision] = useState<ManagerDecision>(lead.managerDecision || "");
   const [acronym, setAcronym] = useState(lead.managerAcronym || "");
@@ -239,19 +272,19 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
   const save = () => onAction(lead, decision, feedback, acronym);
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.date} field="date" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell>
         {lead.finstatLink ? <a href={lead.finstatLink} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
       <TableCell>
         {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
-      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell><EditableCell value={lead.reasoning} field="reasoning" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell>
         <Input
@@ -282,18 +315,20 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
 }
 
 /* ===================== APPROACH ===================== */
-function ApproachTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function ApproachTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></ResizableHead>
@@ -306,14 +341,14 @@ function ApproachTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <ApproachRow key={lead.id} lead={lead} onUpdate={onUpdate} />
+          <ApproachRow key={lead.id} lead={lead} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function ApproachRow({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   const [contact, setContact] = useState(lead.contact || "");
   const [approachType, setApproachType] = useState<ApproachType>(lead.approachType || "");
   const [approachDate, setApproachDate] = useState(lead.approachDate || "");
@@ -357,12 +392,13 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   };
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
       <TableCell>
         <Input
@@ -419,18 +455,20 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
 }
 
 /* ===================== NO RESPONSE ===================== */
-function NoResponseTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function NoResponseTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Time Since Approach" values={leads.map(l => `${daysSince(l.approachDate)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
@@ -441,14 +479,14 @@ function NoResponseTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <NoResponseRow key={lead.id} lead={lead} onUpdate={onUpdate} />
+          <NoResponseRow key={lead.id} lead={lead} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function NoResponseRow({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   const [followedUp, setFollowedUp] = useState<"Yes" | "No" | "">(lead.followedUp || "");
   const [followUpResponse, setFollowUpResponse] = useState<FollowUpResponse>(lead.followUpResponse || "");
   const [followUpFeedback, setFollowUpFeedback] = useState(lead.followUpFeedback || "");
@@ -465,7 +503,6 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
 
   const handleFollowUpResponseChange = (val: FollowUpResponse) => {
     setFollowUpResponse(val);
-    // Just store the selection, don't move yet — wait for Save
   };
 
   const saveFollowUp = () => {
@@ -485,12 +522,13 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
   };
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.approachType || "—"}</TableCell>
       <TableCell className="text-xs font-mono">{lead.approachDate ? `${daysSince(lead.approachDate)} days` : "—"}</TableCell>
@@ -529,18 +567,20 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
 }
 
 /* ===================== DECLINED ===================== */
-function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function DeclinedTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Client Feedback" values={leads.map(l => l.approachFeedback)} filter={filters.approachFeedback || ""} setFilter={(v) => setFilter("approachFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Time Since Last Communication" values={leads.map(l => `${daysSince(l.responseDate || l.date)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
@@ -548,12 +588,13 @@ function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TableRow key={lead.id}>
-            <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+          <TableRow key={lead.id} data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+            <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
             <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
             <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs">{lead.date}</TableCell>
+            <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
             <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.approachFeedback} field="approachFeedback" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs font-mono">{daysSince(lead.responseDate || lead.date)} days</TableCell>
@@ -565,14 +606,15 @@ function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
 }
 
 /* ===================== GENERIC / ALL ===================== */
-function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; activeTab: string;
+function GenericTable({ leads, filters, setFilter, onUpdate, activeTab, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; activeTab: string; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
@@ -588,8 +630,8 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TableRow key={lead.id}>
-            <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+          <TableRow key={lead.id} data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+            <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
             <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
             <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
@@ -611,11 +653,11 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
 export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const setFilter = (key: string, value: string) => setFilters((p) => ({ ...p, [key]: value }));
 
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
-      // Global company name search
       if (search && !lead.companyName.toLowerCase().includes(search.toLowerCase())) return false;
       return Object.entries(filters).every(([key, val]) => {
         if (!val) return true;
@@ -632,6 +674,38 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
     });
   }, [leads, filters, search]);
 
+  const selection: SelectionProps = useMemo(() => ({
+    selected,
+    toggle: (id: string) => setSelected((p) => {
+      const next = new Set(p);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    }),
+    toggleAll: (ids: string[]) => setSelected((p) => {
+      const allIn = ids.length > 0 && ids.every((i) => p.has(i));
+      const next = new Set(p);
+      if (allIn) ids.forEach((i) => next.delete(i));
+      else ids.forEach((i) => next.add(i));
+      return next;
+    }),
+    allSelected: (ids: string[]) => ids.length > 0 && ids.every((i) => selected.has(i)),
+  }), [selected]);
+
+  const selectedLeads = useMemo(() => leads.filter((l) => selected.has(l.id)), [leads, selected]);
+
+  const handleBulkDelete = () => {
+    selectedLeads.forEach((l) => deleteLead(l.id));
+    toast.success(`${selectedLeads.length} lead(s) deleted`);
+    setSelected(new Set());
+    onUpdate();
+  };
+
+  const handleBulkExport = () => {
+    exportLeadsToExcel(selectedLeads);
+    toast.success(`Exported ${selectedLeads.length} lead(s)`);
+  };
+
   if (leads.length === 0) {
     return <p className="text-center py-12 text-muted-foreground">No leads in this category yet.</p>;
   }
@@ -643,18 +717,34 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
 
   return (
     <div>
-      <SearchBox value={search} onChange={setSearch} />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <SearchBox value={search} onChange={setSearch} />
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 mb-3 bg-primary/10 border border-primary/30 rounded-md px-3 py-1.5">
+            <span className="text-xs font-medium text-primary">{selected.size} selected</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={handleBulkExport}>
+              <Download className="h-3.5 w-3.5" /> Export
+            </Button>
+            <Button size="sm" variant="destructive" className="h-7 text-xs gap-1" onClick={handleBulkDelete}>
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
       <div className="rounded-lg border bg-card overflow-x-auto">
         {isTargetIdentified ? (
-          <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isApproach ? (
-          <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isNoResponse ? (
-          <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isDeclined ? (
-          <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : (
-          <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} />
+          <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} selection={selection} />
         )}
       </div>
     </div>

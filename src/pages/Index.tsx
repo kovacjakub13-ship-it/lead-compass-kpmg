@@ -19,15 +19,18 @@ const PIPELINE_TABS: { label: string; statuses: LeadStatus[]; icon: React.ReactN
 
 export default function Index() {
   const [leads, setLeads] = useState<Lead[]>(getLeads);
+  const [topTab, setTopTab] = useState<string>("pipeline");
   const refresh = useCallback(() => setLeads(getLeads()), []);
 
   const filter = (statuses: LeadStatus[]) =>
     statuses.length === 0 ? leads : leads.filter((l) => statuses.includes(l.status));
 
+  const isPipeline = topTab === "pipeline";
+
   return (
     <div className="min-h-screen">
       <header className="border-b bg-primary text-primary-foreground">
-        <div className="mx-auto flex items-center justify-between h-14 px-4 max-w-[1920px]">
+        <div className={`mx-auto flex items-center justify-between h-14 px-4 ${isPipeline ? "max-w-[1920px]" : "max-w-5xl"}`}>
           <div className="flex items-center gap-3">
             <span className="text-lg font-bold tracking-tight">KPMG</span>
             <span className="text-sm font-medium opacity-80">Deal Advisory — BUSDE Tracker</span>
@@ -36,8 +39,8 @@ export default function Index() {
         </div>
       </header>
 
-      <main className="mx-auto px-4 py-6 space-y-6 max-w-[1920px]">
-        <Tabs defaultValue="pipeline">
+      <main className={`mx-auto px-4 py-6 space-y-6 ${isPipeline ? "max-w-[1920px]" : "max-w-5xl"}`}>
+        <Tabs value={topTab} onValueChange={setTopTab}>
           <TabsList className="mb-4">
             <TabsTrigger value="new" className="gap-1.5"><PlusCircle className="h-4 w-4" /> Lead Input</TabsTrigger>
             <TabsTrigger value="pipeline" className="gap-1.5"><LayoutDashboard className="h-4 w-4" /> Targets</TabsTrigger>
