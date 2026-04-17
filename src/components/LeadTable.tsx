@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Calendar } from "@/components/ui/calendar";
@@ -13,6 +14,34 @@ import { ExternalLink, Filter, CalendarIcon, MoreVertical, Trash2, Copy, Downloa
 import { format, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+
+/* ---- Selection context (passed via props) ---- */
+type SelectionProps = {
+  selected: Set<string>;
+  toggle: (id: string) => void;
+  toggleAll: (ids: string[]) => void;
+  allSelected: (ids: string[]) => boolean;
+};
+
+function SelectCell({ id, selected, toggle }: { id: string; selected: Set<string>; toggle: (id: string) => void }) {
+  return (
+    <Checkbox
+      checked={selected.has(id)}
+      onCheckedChange={() => toggle(id)}
+      aria-label="Select row"
+    />
+  );
+}
+
+function SelectAllHead({ ids, selection }: { ids: string[]; selection: SelectionProps }) {
+  return (
+    <Checkbox
+      checked={ids.length > 0 && selection.allSelected(ids)}
+      onCheckedChange={() => selection.toggleAll(ids)}
+      aria-label="Select all"
+    />
+  );
+}
 
 interface Props {
   leads: Lead[];
