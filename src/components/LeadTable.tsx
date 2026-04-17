@@ -455,18 +455,20 @@ function ApproachRow({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () =
 }
 
 /* ===================== NO RESPONSE ===================== */
-function NoResponseTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function NoResponseTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Time Since Approach" values={leads.map(l => `${daysSince(l.approachDate)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
@@ -477,14 +479,14 @@ function NoResponseTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <NoResponseRow key={lead.id} lead={lead} onUpdate={onUpdate} />
+          <NoResponseRow key={lead.id} lead={lead} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function NoResponseRow({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   const [followedUp, setFollowedUp] = useState<"Yes" | "No" | "">(lead.followedUp || "");
   const [followUpResponse, setFollowUpResponse] = useState<FollowUpResponse>(lead.followUpResponse || "");
   const [followUpFeedback, setFollowUpFeedback] = useState(lead.followUpFeedback || "");
@@ -501,7 +503,6 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
 
   const handleFollowUpResponseChange = (val: FollowUpResponse) => {
     setFollowUpResponse(val);
-    // Just store the selection, don't move yet — wait for Save
   };
 
   const saveFollowUp = () => {
@@ -521,12 +522,13 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
   };
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.approachType || "—"}</TableCell>
       <TableCell className="text-xs font-mono">{lead.approachDate ? `${daysSince(lead.approachDate)} days` : "—"}</TableCell>
@@ -565,18 +567,20 @@ function NoResponseRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void })
 }
 
 /* ===================== DECLINED ===================== */
-function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function DeclinedTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Client Feedback" values={leads.map(l => l.approachFeedback)} filter={filters.approachFeedback || ""} setFilter={(v) => setFilter("approachFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Time Since Last Communication" values={leads.map(l => `${daysSince(l.responseDate || l.date)} days`)} filter={filters.timeSince || ""} setFilter={(v) => setFilter("timeSince", v)} /></ResizableHead>
@@ -584,12 +588,13 @@ function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TableRow key={lead.id}>
-            <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+          <TableRow key={lead.id} data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+            <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
             <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
             <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs">{lead.date}</TableCell>
+            <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
             <TableCell><EditableCell value={lead.contact} field="contact" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.approachFeedback} field="approachFeedback" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell className="text-xs font-mono">{daysSince(lead.responseDate || lead.date)} days</TableCell>
@@ -601,14 +606,15 @@ function DeclinedTable({ leads, filters, setFilter, onUpdate }: {
 }
 
 /* ===================== GENERIC / ALL ===================== */
-function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; activeTab: string;
+function GenericTable({ leads, filters, setFilter, onUpdate, activeTab, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; activeTab: string; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
@@ -624,8 +630,8 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TableRow key={lead.id}>
-            <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+          <TableRow key={lead.id} data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+            <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
             <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
             <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
             <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
