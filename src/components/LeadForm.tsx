@@ -81,26 +81,7 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     };
 
     addLead(lead);
-    toast.custom(
-      (t) => (
-        <div className="flex items-center gap-4 bg-card border-2 border-primary rounded-xl shadow-2xl p-5 w-[480px] max-w-[92vw]">
-          <img src={thwapImg} alt="Thwap!" className="h-24 w-24 object-contain shrink-0" />
-          <div className="flex-1">
-            <p className="text-2xl font-extrabold leading-tight text-foreground">Ty finančný žralok!</p>
-            <p className="text-sm text-muted-foreground mt-1">Chceš rovno buchnúť dalšiu?</p>
-            <p className="text-xs text-muted-foreground/70 mt-2 italic">{form.companyName} added to pipeline</p>
-          </div>
-          <button
-            onClick={() => toast.dismiss(t)}
-            className="self-start text-muted-foreground hover:text-foreground text-lg leading-none"
-            aria-label="Close"
-          >
-            ×
-          </button>
-        </div>
-      ),
-      { duration: 5000, position: "top-center" }
-    );
+    setCelebrate({ open: true, company: form.companyName });
     setForm({ companyName: "", ico: "", sector: "", customSector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
     onSubmitted();
   };
