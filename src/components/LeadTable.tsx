@@ -224,8 +224,8 @@ function SearchBox({ value, onChange }: { value: string; onChange: (v: string) =
 }
 
 /* ===================== TARGET IDENTIFIED ===================== */
-function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
   const handleManagerAction = (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => {
     const updates: Partial<Lead> = { managerDecision: decision, managerFeedback: feedback, managerAcronym: acronym };
@@ -236,18 +236,19 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
     onUpdate();
   };
 
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="FinStat" values={leads.map(l => l.finstatLink ? "Has link" : "")} filter={filters.finstatLink || ""} setFilter={(v) => setFilter("finstatLink", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Website" values={leads.map(l => l.website ? "Has link" : "")} filter={filters.website || ""} setFilter={(v) => setFilter("website", v)} /></ResizableHead>
-          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Reasoning" values={leads.map(l => l.reasoning)} filter={filters.reasoning || ""} setFilter={(v) => setFilter("reasoning", v)} /></ResizableHead>
           <ResizableHead minWidth={120}><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Decision" values={leads.map(l => l.managerDecision)} filter={filters.managerDecision || ""} setFilter={(v) => setFilter("managerDecision", v)} /></ResizableHead>
@@ -256,14 +257,14 @@ function TargetIdentifiedTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} onUpdate={onUpdate} />
+          <TargetRow key={lead.id} lead={lead} onAction={handleManagerAction} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void; onUpdate: () => void }) {
+function TargetRow({ lead, onAction, onUpdate, selection }: { lead: Lead; onAction: (lead: Lead, decision: ManagerDecision, feedback: string, acronym: string) => void; onUpdate: () => void; selection: SelectionProps }) {
   const [feedback, setFeedback] = useState(lead.managerFeedback);
   const [decision, setDecision] = useState<ManagerDecision>(lead.managerDecision || "");
   const [acronym, setAcronym] = useState(lead.managerAcronym || "");
@@ -271,19 +272,19 @@ function TargetRow({ lead, onAction, onUpdate }: { lead: Lead; onAction: (lead: 
   const save = () => onAction(lead, decision, feedback, acronym);
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.date} field="date" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell>
         {lead.finstatLink ? <a href={lead.finstatLink} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
       <TableCell>
         {lead.website ? <a href={lead.website} target="_blank" rel="noreferrer" className="text-accent inline-flex items-center gap-1 text-xs"><ExternalLink className="h-3 w-3" />Link</a> : "—"}
       </TableCell>
-      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell><EditableCell value={lead.reasoning} field="reasoning" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell>
         <Input
