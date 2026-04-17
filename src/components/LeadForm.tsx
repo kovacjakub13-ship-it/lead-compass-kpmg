@@ -41,6 +41,8 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     addedBy: "",
   });
 
+  const [celebrate, setCelebrate] = useState<{ open: boolean; company: string }>({ open: false, company: "" });
+
   const set = (key: string, value: string) => setForm((p) => ({ ...p, [key]: value }));
 
   const handleSubmit = (e: React.FormEvent) => {
