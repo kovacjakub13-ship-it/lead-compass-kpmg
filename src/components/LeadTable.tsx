@@ -653,11 +653,11 @@ function GenericTable({ leads, filters, setFilter, onUpdate, activeTab, selectio
 export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
   const setFilter = (key: string, value: string) => setFilters((p) => ({ ...p, [key]: value }));
 
   const filtered = useMemo(() => {
     return leads.filter((lead) => {
-      // Global company name search
       if (search && !lead.companyName.toLowerCase().includes(search.toLowerCase())) return false;
       return Object.entries(filters).every(([key, val]) => {
         if (!val) return true;
@@ -674,6 +674,38 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
     });
   }, [leads, filters, search]);
 
+  const selection: SelectionProps = useMemo(() => ({
+    selected,
+    toggle: (id: string) => setSelected((p) => {
+      const next = new Set(p);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    }),
+    toggleAll: (ids: string[]) => setSelected((p) => {
+      const allIn = ids.length > 0 && ids.every((i) => p.has(i));
+      const next = new Set(p);
+      if (allIn) ids.forEach((i) => next.delete(i));
+      else ids.forEach((i) => next.add(i));
+      return next;
+    }),
+    allSelected: (ids: string[]) => ids.length > 0 && ids.every((i) => selected.has(i)),
+  }), [selected]);
+
+  const selectedLeads = useMemo(() => leads.filter((l) => selected.has(l.id)), [leads, selected]);
+
+  const handleBulkDelete = () => {
+    selectedLeads.forEach((l) => deleteLead(l.id));
+    toast.success(`${selectedLeads.length} lead(s) deleted`);
+    setSelected(new Set());
+    onUpdate();
+  };
+
+  const handleBulkExport = () => {
+    exportLeadsToExcel(selectedLeads);
+    toast.success(`Exported ${selectedLeads.length} lead(s)`);
+  };
+
   if (leads.length === 0) {
     return <p className="text-center py-12 text-muted-foreground">No leads in this category yet.</p>;
   }
@@ -685,18 +717,34 @@ export default function LeadTable({ leads, activeTab, onUpdate }: Props) {
 
   return (
     <div>
-      <SearchBox value={search} onChange={setSearch} />
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <SearchBox value={search} onChange={setSearch} />
+        {selected.size > 0 && (
+          <div className="flex items-center gap-2 mb-3 bg-primary/10 border border-primary/30 rounded-md px-3 py-1.5">
+            <span className="text-xs font-medium text-primary">{selected.size} selected</span>
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={handleBulkExport}>
+              <Download className="h-3.5 w-3.5" /> Export
+            </Button>
+            <Button size="sm" variant="destructive" className="h-7 text-xs gap-1" onClick={handleBulkDelete}>
+              <Trash2 className="h-3.5 w-3.5" /> Delete
+            </Button>
+            <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        )}
+      </div>
       <div className="rounded-lg border bg-card overflow-x-auto">
         {isTargetIdentified ? (
-          <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <TargetIdentifiedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isApproach ? (
-          <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <ApproachTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isNoResponse ? (
-          <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <NoResponseTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : isDeclined ? (
-          <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} />
+          <DeclinedTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} selection={selection} />
         ) : (
-          <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} />
+          <GenericTable leads={filtered} filters={filters} setFilter={setFilter} onUpdate={onUpdate} activeTab={activeTab} selection={selection} />
         )}
       </div>
     </div>
