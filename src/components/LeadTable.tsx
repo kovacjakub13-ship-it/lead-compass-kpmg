@@ -315,18 +315,20 @@ function TargetRow({ lead, onAction, onUpdate, selection }: { lead: Lead; onActi
 }
 
 /* ===================== APPROACH ===================== */
-function ApproachTable({ leads, filters, setFilter, onUpdate }: {
-  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void;
+function ApproachTable({ leads, filters, setFilter, onUpdate, selection }: {
+  leads: Lead[]; filters: Record<string, string>; setFilter: (k: string, v: string) => void; onUpdate: () => void; selection: SelectionProps;
 }) {
+  const ids = leads.map(l => l.id);
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10"></TableHead>
+          <TableHead className="w-20"><SelectAllHead ids={ids} selection={selection} /></TableHead>
           <ResizableHead><FilterHeader label="Company" values={leads.map(l => l.companyName)} filter={filters.companyName || ""} setFilter={(v) => setFilter("companyName", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="IČO" values={leads.map(l => l.ico)} filter={filters.ico || ""} setFilter={(v) => setFilter("ico", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Sector" values={leads.map(l => l.sector)} filter={filters.sector || ""} setFilter={(v) => setFilter("sector", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Date Added" values={leads.map(l => l.date)} filter={filters.date || ""} setFilter={(v) => setFilter("date", v)} /></ResizableHead>
+          <ResizableHead><FilterHeader label="Originator" values={leads.map(l => l.addedBy)} filter={filters.addedBy || ""} setFilter={(v) => setFilter("addedBy", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Mgr Feedback" values={leads.map(l => l.managerFeedback)} filter={filters.managerFeedback || ""} setFilter={(v) => setFilter("managerFeedback", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Contact" values={leads.map(l => l.contact)} filter={filters.contact || ""} setFilter={(v) => setFilter("contact", v)} /></ResizableHead>
           <ResizableHead><FilterHeader label="Approach Type" values={leads.map(l => l.approachType)} filter={filters.approachType || ""} setFilter={(v) => setFilter("approachType", v)} /></ResizableHead>
@@ -339,14 +341,14 @@ function ApproachTable({ leads, filters, setFilter, onUpdate }: {
       </TableHeader>
       <TableBody>
         {leads.map((lead) => (
-          <ApproachRow key={lead.id} lead={lead} onUpdate={onUpdate} />
+          <ApproachRow key={lead.id} lead={lead} onUpdate={onUpdate} selection={selection} />
         ))}
       </TableBody>
     </Table>
   );
 }
 
-function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
+function ApproachRow({ lead, onUpdate, selection }: { lead: Lead; onUpdate: () => void; selection: SelectionProps }) {
   const [contact, setContact] = useState(lead.contact || "");
   const [approachType, setApproachType] = useState<ApproachType>(lead.approachType || "");
   const [approachDate, setApproachDate] = useState(lead.approachDate || "");
@@ -390,12 +392,13 @@ function ApproachRow({ lead, onUpdate }: { lead: Lead; onUpdate: () => void }) {
   };
 
   return (
-    <TableRow>
-      <TableCell><RowActions lead={lead} onUpdate={onUpdate} /></TableCell>
+    <TableRow data-state={selection.selected.has(lead.id) ? "selected" : undefined}>
+      <TableCell><RowActions lead={lead} onUpdate={onUpdate} selection={selection} /></TableCell>
       <TableCell><EditableCell value={lead.companyName} field="companyName" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell><EditableCell value={lead.ico} field="ico" leadId={lead.id} onUpdate={onUpdate} className="font-mono" /></TableCell>
       <TableCell><EditableCell value={lead.sector} field="sector" leadId={lead.id} onUpdate={onUpdate} /></TableCell>
       <TableCell className="text-xs">{lead.date}</TableCell>
+      <TableCell><EditableCell value={lead.addedBy} field="addedBy" leadId={lead.id} onUpdate={onUpdate} className="w-14" /></TableCell>
       <TableCell className="text-xs max-w-[120px] truncate" title={lead.managerFeedback}>{lead.managerFeedback || "—"}</TableCell>
       <TableCell>
         <Input
