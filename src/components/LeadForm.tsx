@@ -7,7 +7,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { addLead } from "@/lib/leads-store";
 import { Lead } from "@/lib/types";
 import { toast } from "sonner";
-import { Send, CheckCircle2 } from "lucide-react";
+import { Send } from "lucide-react";
+import thwapImg from "@/assets/thwap.png";
 
 const SECTORS = [
   "Agriculture", "Automotive", "Biotechnology", "Chemicals and materials",
@@ -77,10 +78,26 @@ export default function LeadForm({ onSubmitted }: LeadFormProps) {
     };
 
     addLead(lead);
-    toast.success("Lead submitted successfully!", {
-      description: `${form.companyName} has been added to the pipeline.`,
-      icon: <CheckCircle2 className="h-5 w-5 text-green-500" />,
-    });
+    toast.custom(
+      (t) => (
+        <div className="flex items-center gap-4 bg-card border-2 border-primary rounded-xl shadow-2xl p-5 w-[480px] max-w-[92vw]">
+          <img src={thwapImg} alt="Thwap!" className="h-24 w-24 object-contain shrink-0" />
+          <div className="flex-1">
+            <p className="text-2xl font-extrabold leading-tight text-foreground">Ty finančný žralok!</p>
+            <p className="text-sm text-muted-foreground mt-1">Chceš rovno buchnúť dalšiu?</p>
+            <p className="text-xs text-muted-foreground/70 mt-2 italic">{form.companyName} added to pipeline</p>
+          </div>
+          <button
+            onClick={() => toast.dismiss(t)}
+            className="self-start text-muted-foreground hover:text-foreground text-lg leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+      ),
+      { duration: 5000, position: "top-center" }
+    );
     setForm({ companyName: "", ico: "", sector: "", customSector: "", sourceType: "", date: today, website: "", finstatLink: "", reasoning: "", addedBy: "" });
     onSubmitted();
   };
