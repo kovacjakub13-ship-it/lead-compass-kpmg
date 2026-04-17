@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { addLead } from "@/lib/leads-store";
 import { Lead } from "@/lib/types";
 import { toast } from "sonner";
-import { Send } from "lucide-react";
+import { Send, Sparkles } from "lucide-react";
 import thwapImg from "@/assets/thwap.png";
 
 const SECTORS = [
